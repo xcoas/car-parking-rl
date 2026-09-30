@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50">
+  <!-- Karoseria -->
+  <rect x="0" y="0" width="100" height="50" rx="6" fill="#1E88E5"/>
+  <!-- Dach -->
+  <rect x="25" y="5" width="45" height="40" rx="5" fill="#1565C0"/>
+  <!-- Szyba przednia -->
+  <polygon points="70,8 82,14 82,36 70,42" fill="#81D4FA"/>
+  <!-- Szyba tylna -->
+  <polygon points="25,8 15,14 15,36 25,42" fill="#81D4FA"/>
+  <!-- Reflektory -->
+  <rect x="94" y="4" width="6" height="10" rx="2" fill="#FFF59D"/>
+  <rect x="94" y="36" width="6" height="10" rx="2" fill="#FFF59D"/>
+  <!-- Światła stop -->
+  <rect x="0" y="4" width="6" height="12" rx="2" fill="#D32F2F"/>
+  <rect x="0" y="34" width="6" height="12" rx="2" fill="#D32F2F"/>
+</svg>
