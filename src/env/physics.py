@@ -36,6 +36,8 @@ class ParkingPhysics:
 
         self.is_parked = False
 
+        self.sensor_angles = [0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5]
+
         self.width, self.height = self.calculate_map_size(blueprint)
 
         self.borders = [
@@ -105,7 +107,7 @@ class ParkingPhysics:
         radar_readings = []
         angle = self.agent_body.angle
         pos_x, pos_y = self.agent_body.position
-        sensor_angles = [math.radians(deg) for deg in [0, 45, 90, 135, 180, 225, 270, 315]]
+        sensor_angles = [math.radians(deg) for deg in self.sensor_angles]
 
         self.radar_rays = []
 

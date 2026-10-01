@@ -16,7 +16,6 @@ while True:
     elif keys[pygame.K_s] or keys[pygame.K_DOWN]:
         throttle = -150
 
-    # Oś X (Kierownica)
     if keys[pygame.K_a] or keys[pygame.K_LEFT]:
         steer = -150
     elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
