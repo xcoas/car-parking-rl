@@ -13,16 +13,23 @@ class ParkingRenderer:
         self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
         self.clock = pygame.time.Clock()
 
+        spot_width = physics.SPOT_WIDTH
+        spot_depth = physics.SPOT_DEPTH
+
+        target_row, target_spot = physics.blueprint['car_target_spot']
+        target_x = ((target_row + 1) * physics.VERTICAL_LANE) + (target_row * spot_depth)
+        target_y = physics.HORIZONTAL_LANE + (target_spot * spot_width)
+        self.target_rect = pygame.Rect(target_x, target_y, spot_depth, spot_width)
+
         self.parking_lines = []
         spot_width = physics.SPOT_WIDTH
         spot_depth = physics.SPOT_DEPTH
-        for j in range(physics.blueprint['num_of_rows'] + 1):
+        for j in range(physics.blueprint['num_of_rows']):
             x_start = ((j + 1) * physics.VERTICAL_LANE) + (j * spot_depth)
             x_end = x_start + spot_depth
 
             for i in range(physics.blueprint['parking_spots_per_row'] + 1):
                 y = i * spot_width + physics.HORIZONTAL_LANE
-                print(y)
 
                 start_point = (x_start, y)
                 end_point = (x_end, y)
@@ -53,6 +60,8 @@ class ParkingRenderer:
             if event.type == pygame.QUIT:
                 sys.exit()
 
+        pygame.draw.rect(self.screen, (0, 100, 0), self.target_rect)
+
         for line in self.parking_lines:
             pygame.draw.line(self.screen, (250, 250, 250), line[0], line[1])
 
@@ -69,6 +78,13 @@ class ParkingRenderer:
             rotated_image = pygame.transform.rotate(selected_spirte, angle)
             draw_position = rotated_image.get_rect(center=(x,y))
             self.screen.blit(rotated_image, draw_position)
+
+        for start_pos, end_pos, is_hit in self.physics.radar_rays:
+            color = (255, 60, 60) if is_hit else (60, 255, 60)
+            pygame.draw.line(self.screen, color, start_pos, end_pos)
+
+            if is_hit:
+                pygame.draw.circle(self.screen, (255, 0, 0), (int(end_pos[0]), int(end_pos[1])), 4)
 
         body_player = self.physics.agent_body
         sprite = self.player_car_svg

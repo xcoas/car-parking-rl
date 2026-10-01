@@ -5,9 +5,9 @@ import math
 TEST_BLUEPRINT = {
     "num_of_rows": 4,
     "parking_spots_per_row": 10,
-    "car_start": (325, 200, 180),
+    "car_start": (325, 100, 180),
     "parking_density": 0.8,
-    "car_target_spot": (0, 2),
+    "car_target_spot": (0, 0),
     "car_mass": 100
 }
 
@@ -30,6 +30,12 @@ class ParkingPhysics:
         self.space.gravity = (0.0, 0.0)
         self.space.damping = 0.1
 
+        self.crashed = False
+        self.space.on_collision(1, 2, begin=self.handle_collision)
+        self.space.on_collision(1, 3, begin=self.handle_collision)
+
+        self.is_parked = False
+
         self.width, self.height = self.calculate_map_size(blueprint)
 
         self.borders = [
@@ -46,8 +52,11 @@ class ParkingPhysics:
         self.parked_cars_coordinates = self.calculate_spot_coordinates(self.parked_cars_indices)
         self.parked_car_bodies = []
 
+        self.parking_spot_coordinate = self.calculate_spot_coordinates([blueprint['car_target_spot']])[0]
+
         for border in self.borders:
             wall = pymunk.Segment(self.space.static_body, border[0], border[1], 5)
+            wall.collision_type = 3
 
             self.space.add(wall)
 
@@ -55,10 +64,12 @@ class ParkingPhysics:
             body = pymunk.Body(body_type=pymunk.Body.STATIC)
             body.position = parked_car_coordinate
             shape = pymunk.Poly.create_box(body, (self.PARKED_CAR_LENGTH, self.PARKED_CAR_WIDTH))
+            shape.collision_type = 2
             self.space.add(body, shape)
             self.parked_car_bodies.append((body, random.randint(1, 3)))
 
         self.agent_body = self.spawn_agent(blueprint)
+        self.radar_rays = []
 
     def step(self, action):
         throttle = action[0]
@@ -71,7 +82,54 @@ class ParkingPhysics:
 
         self.agent_body.torque = steer * forward_speed * 15
         self.agent_body.apply_force_at_local_point((throttle * 100, 0), (0, 0))
+
         self.space.step(1 / 60.0)
+
+        dx = abs(self.parking_spot_coordinate[0] - self.agent_body.position.x)
+        dy = abs(self.parking_spot_coordinate[1] - self.agent_body.position.y)
+
+        speed = self.agent_body.velocity.length
+        is_straight = abs(math.cos(self.agent_body.angle)) >= 0.95
+
+        if (dx <= self.SPOT_DEPTH / 5) and (dy <= self.SPOT_WIDTH / 5) and is_straight and (speed < 5.0):
+            self.is_parked = True
+
+        self.get_radar_readings()
+
+    def handle_collision(self, arbiter, space, data):
+        self.crashed = True
+        return True
+
+    def get_radar_readings(self):
+        max_distance = 200.0
+        radar_readings = []
+        angle = self.agent_body.angle
+        pos_x, pos_y = self.agent_body.position
+        sensor_angles = [math.radians(deg) for deg in [0, 45, 90, 135, 180, 225, 270, 315]]
+
+        self.radar_rays = []
+
+        for sensor_angle in sensor_angles:
+            total_angle = angle + sensor_angle
+
+            end_x = pos_x + max_distance * math.cos(total_angle)
+            end_y = pos_y + max_distance * math.sin(total_angle)
+
+            hit = self.space.segment_query_first(
+                (pos_x, pos_y),
+                (end_x, end_y),
+                1.0,
+                pymunk.ShapeFilter(group=1)
+            )
+
+            if hit is not None:
+                radar_readings.append(hit.alpha)
+                self.radar_rays.append(((pos_x, pos_y), (hit.point.x, hit.point.y), True))
+            else:
+                radar_readings.append(1.0)
+                self.radar_rays.append(((pos_x, pos_y), (end_x, end_y), False))
+
+        return radar_readings
 
     def calculate_map_size(self, blueprint):
         map_width = (blueprint['num_of_rows'] * self.SPOT_DEPTH) + ((blueprint['num_of_rows'] + 1) * self.VERTICAL_LANE)
@@ -112,6 +170,8 @@ class ParkingPhysics:
         body.position = (blueprint['car_start'][0], blueprint['car_start'][1])
         body.angle = math.radians(blueprint['car_start'][2])
         shape = pymunk.Poly.create_box(body, (self.PLAYER_CAR_LENGTH, self.PLAYER_CAR_WIDTH))
+        shape.collision_type = 1
+        shape.filter = pymunk.ShapeFilter(group=1)
         self.space.add(body, shape)
 
         return body
