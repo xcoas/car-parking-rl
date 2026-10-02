@@ -2,16 +2,18 @@ import gymnasium as gym
 import numpy as np
 import math
 from gymnasium import spaces
-from physics import ParkingPhysics, TEST_BLUEPRINT
+from physics import ParkingPhysics
 from renderer import ParkingRenderer
 
 class ParkingEnv(gym.Env):
-    def __init__(self, blueprint, render_mode=None):
+    def __init__(self, initial_difficulty: float = 0.0, max_steps: int = 2000, render_mode=None):
         super().__init__()
         self.render_mode = render_mode
-        self.blueprint = blueprint
+        self.difficulty = initial_difficulty
+        self.current_step = 0
+        self.max_steps = max_steps
 
-        self.physics = ParkingPhysics(self.blueprint)
+        self.physics = ParkingPhysics(difficulty=self.difficulty)
         if self.render_mode == 'human':
             self.renderer = ParkingRenderer(self.physics)
 
@@ -21,17 +23,16 @@ class ParkingEnv(gym.Env):
         self.dist_old = 0
         self.dist_new = 0
 
-        self.current_step = 0
-        self.max_steps = 2000
-        dx_target = dy_target = 0
+    def set_difficulty(self, level: float):
+        self.difficulty = float(np.clip(level, 0.0, 1.0))
 
     def _get_obs(self):
         radar_readings = self.physics.get_radar_readings()
 
-        self.parking_spot_coordinate = self.physics.calculate_spot_coordinates([self.blueprint['car_target_spot']])[0]
+        target_x, target_y = self.physics.parking_spot_coordinate
 
-        dx_target = self.parking_spot_coordinate[0] - self.physics.agent_body.position.x
-        dy_target = self.parking_spot_coordinate[1] - self.physics.agent_body.position.y
+        dx_target = target_x - self.physics.agent_body.position.x
+        dy_target = target_y - self.physics.agent_body.position.y
 
         distance = self.get_car_distance() / math.hypot(self.physics.width, self.physics.height)
         angle_to_target = math.atan2(dy_target, dx_target)
@@ -58,7 +59,7 @@ class ParkingEnv(gym.Env):
         super().reset(seed=seed)
         self.current_step = 0
 
-        self.physics = ParkingPhysics(self.blueprint)
+        self.physics = ParkingPhysics(difficulty=self.difficulty)
         self.physics.crashed = False
 
         if self.render_mode == 'human':
@@ -104,7 +105,9 @@ class ParkingEnv(gym.Env):
         if self.render_mode == 'human':
             self.renderer.render()
 
-        return self._get_obs(), reward, terminated, trunacted, {}
+        info = {"is_success": self.physics.is_parked}
+
+        return self._get_obs(), reward, terminated, trunacted, info
 
     def get_car_distance(self):
         dx_target = self.physics.parking_spot_coordinate[0] - self.physics.agent_body.position.x

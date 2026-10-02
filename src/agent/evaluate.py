@@ -6,10 +6,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'e
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
-from env.physics import TEST_BLUEPRINT
 from env.parking_env import ParkingEnv
 
-env = ParkingEnv(blueprint=TEST_BLUEPRINT, render_mode='human')
+env = ParkingEnv(initial_difficulty=0.0, render_mode='human')
 model = PPO.load("ppo_parking_agent")
 
 obs, info = env.reset()

@@ -60,7 +60,12 @@ class ParkingRenderer:
             if event.type == pygame.QUIT:
                 sys.exit()
 
-        pygame.draw.rect(self.screen, (0, 100, 0), self.target_rect)
+        target_row, target_spot = self.physics.blueprint['car_target_spot']
+        target_x = ((target_row + 1) * self.physics.VERTICAL_LANE) + (target_row * self.physics.SPOT_DEPTH)
+        target_y = self.physics.HORIZONTAL_LANE + (target_spot * self.physics.SPOT_WIDTH)
+        target_rect = pygame.Rect(target_x, target_y, self.physics.SPOT_DEPTH, self.physics.SPOT_WIDTH)
+        
+        pygame.draw.rect(self.screen, (0, 100, 0), target_rect)
 
         for line in self.parking_lines:
             pygame.draw.line(self.screen, (250, 250, 250), line[0], line[1])

@@ -1,8 +1,7 @@
 import pygame
 from parking_env import ParkingEnv
-from physics import TEST_BLUEPRINT
 
-env = ParkingEnv(blueprint=TEST_BLUEPRINT, render_mode='human')
+env = ParkingEnv(initial_difficulty=0.5, render_mode='human')
 obs, info = env.reset()
 
 while True:
