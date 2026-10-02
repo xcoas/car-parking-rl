@@ -5,9 +5,9 @@ import math
 TEST_BLUEPRINT = {
     "num_of_rows": 4,
     "parking_spots_per_row": 10,
-    "car_start": (325, 100, 180),
-    "parking_density": 0.8,
-    "car_target_spot": (0, 0),
+    "car_start": (325, 300, 180),
+    "parking_density": 0.75,
+    "car_target_spot": (0, 1),
     "car_mass": 100
 }
 

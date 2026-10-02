@@ -14,8 +14,14 @@ env = ParkingEnv(blueprint=TEST_BLUEPRINT)
 check_env(env)
 print("ParkingEnv passed validation!")
 
-model = PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=1_000_000)
+policy_kwargs = dict(
+    net_arch=dict(
+        pi=[128, 128],
+        vf=[256, 256]
+    )
+)
+model = PPO("MlpPolicy", env, ent_coef=0.005, verbose=1, policy_kwargs=policy_kwargs)
+model.learn(total_timesteps=5_000_000)
 
 model.save("ppo_parking_agent")
 print("model zapisany")

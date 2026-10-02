@@ -87,7 +87,7 @@ class ParkingEnv(gym.Env):
 
         if self.physics.crashed == True:
             terminated = True
-            reward -= 0.5
+            reward -= 3.0
 
         if self.physics.is_parked == True:
             terminated = True

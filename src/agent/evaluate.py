@@ -15,7 +15,7 @@ model = PPO.load("ppo_parking_agent")
 obs, info = env.reset()
 
 while True:
-    action, _states = model.predict(obs)
+    action, _states = model.predict(obs, deterministic=False)
     obs, reward, terminated, truncated, info = env.step(action)
 
     if terminated or truncated:
