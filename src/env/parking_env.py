@@ -44,13 +44,16 @@ class ParkingEnv(gym.Env):
         cos_angle = math.cos(self.physics.agent_body.angle)
 
         vx, vy = self.physics.agent_body.velocity
+        max_speed = 130.0
+        norm_vx = np.clip(vx / max_speed, -1.0, 1.0)
+        norm_vy = np.clip(vy / max_speed, -1.0, 1.0)
 
         obs = np.array([
             *radar_readings,
             distance,
             dir_sin, dir_cos,
             sin_angle, cos_angle,
-            vx, vy
+            norm_vx, norm_vy
         ],dtype=np.float32)
 
         return obs
@@ -84,19 +87,19 @@ class ParkingEnv(gym.Env):
         self.physics.step([throttle, steer])
 
         self.dist_new = self.get_car_distance()
-        reward += (self.dist_old - self.dist_new) * 0.05
+        reward += (self.dist_old - self.dist_new) * 0.0005
 
         if self.physics.crashed == True:
             terminated = True
-            reward -= 3.0
+            reward -= 25.0
 
         if self.physics.is_parked == True:
             terminated = True
-            reward += 10.0
+            reward += 25.0
 
         if self.current_step >= self.max_steps:
             trunacted = True
-            reward -= 1.0
+            reward -= 2.0
 
         reward -= 0.001
 

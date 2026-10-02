@@ -34,11 +34,13 @@ class DifficultyCallback(BaseCallback):
                         self.training_env.env_method("set_difficulty", self.current_difficulty)
                         print(f"Congrats car just graduated to new difficulty: {self.current_difficulty}, winrate: {win_percent:.1f}")
                         self.last_results.clear()
+                        self.model.ep_success_buffer.clear()
                     elif win_percent < 0.2:
                         self.current_difficulty = max(0.0, self.current_difficulty - 0.1)
                         self.training_env.env_method("set_difficulty", self.current_difficulty)
                         print(f"Sadly our car couldnt keep up new difficulty: {self.current_difficulty}, winrate: {win_percent:.1f}")
                         self.last_results.clear()
+                        self.model.ep_success_buffer.clear()
 
         self.logger.record("curriculum/difficulty", self.current_difficulty)
         return True
@@ -61,7 +63,7 @@ if __name__ == "__main__":
     policy_kwargs = dict(
         net_arch=dict(
             pi=[128, 128],
-            vf=[256, 256]
+            vf=[256, 128]
         )
     )
     model = PPO("MlpPolicy", env, ent_coef=0.005, verbose=1, policy_kwargs=policy_kwargs)
