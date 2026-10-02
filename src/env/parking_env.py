@@ -6,16 +6,18 @@ from physics import ParkingPhysics
 from renderer import ParkingRenderer
 
 class ParkingEnv(gym.Env):
-    def __init__(self, initial_difficulty: float = 0.0, max_steps: int = 2000, render_mode=None):
+    def __init__(self, initial_difficulty: float = 0.0, max_steps: int = 2000, render_mode=None, fps: int = 60):
         super().__init__()
         self.render_mode = render_mode
         self.difficulty = initial_difficulty
         self.current_step = 0
         self.max_steps = max_steps
+        self.action_repeat = 4
+        self.fps = fps
 
         self.physics = ParkingPhysics(difficulty=self.difficulty)
         if self.render_mode == 'human':
-            self.renderer = ParkingRenderer(self.physics)
+            self.renderer = ParkingRenderer(self.physics, fps=self.fps)
 
         self.action_space = spaces.Box(low=np.array([-0.5, -1.0], dtype=np.float32), high=np.array([1.0, 1.0], dtype=np.float32), shape=(2,), dtype=np.float32)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(7 + len(self.physics.sensor_angles),), dtype=np.float32)
@@ -84,14 +86,21 @@ class ParkingEnv(gym.Env):
 
         self.dist_old = self.get_car_distance()
 
-        self.physics.step([throttle, steer])
+        for _ in range(self.action_repeat):
+            self.physics.step([throttle, steer])
+
+            if self.render_mode == 'human':
+                self.renderer.render()
+
+            if self.physics.crashed or self.physics.is_parked:
+                break
 
         self.dist_new = self.get_car_distance()
-        reward += (self.dist_old - self.dist_new) * 0.0005
+        reward += (self.dist_old - self.dist_new) * 0.001
 
         if self.physics.crashed == True:
             terminated = True
-            reward -= 25.0
+            reward -= 10.0
 
         if self.physics.is_parked == True:
             terminated = True
@@ -101,7 +110,7 @@ class ParkingEnv(gym.Env):
             trunacted = True
             reward -= 2.0
 
-        reward -= 0.001
+        reward -= 0.0025
 
         self.current_step += 1
 

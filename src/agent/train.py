@@ -29,7 +29,7 @@ class DifficultyCallback(BaseCallback):
 
                 if (len(self.last_results) == 100):
                     win_percent = sum(self.last_results) / 100
-                    if win_percent > 0.8:
+                    if win_percent > 0.7:
                         self.current_difficulty = min(1.0, self.current_difficulty + 0.1)
                         self.training_env.env_method("set_difficulty", self.current_difficulty)
                         print(f"Congrats car just graduated to new difficulty: {self.current_difficulty}, winrate: {win_percent:.1f}")
@@ -62,12 +62,20 @@ if __name__ == "__main__":
 
     policy_kwargs = dict(
         net_arch=dict(
-            pi=[128, 128],
-            vf=[256, 128]
+            pi=[256, 256],
+            vf=[512, 256]
         )
     )
-    model = PPO("MlpPolicy", env, ent_coef=0.005, verbose=1, policy_kwargs=policy_kwargs)
-    model.learn(total_timesteps=10_000_000, callback=callbacks)
+    model = PPO(
+        "MlpPolicy", 
+        env, 
+        ent_coef=0.00005, 
+        verbose=1, 
+        policy_kwargs=policy_kwargs,
+        n_steps=16000,
+        batch_size=4000
+    )
+    model.learn(total_timesteps=20_000_000, callback=callbacks)
 
     model.save("ppo_parking_agent")
     print("model zapisany")

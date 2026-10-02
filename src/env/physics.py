@@ -112,7 +112,7 @@ class ParkingPhysics:
         if difficulty < 0.2:
             start_x = lane_center_x + random.uniform(-10, 10)
             start_y = target_y + random.uniform(-15, 15)
-            start_angle = base_angle + random.uniform(-10, 10)
+            start_angle = base_angle + random.uniform(-30, 30)
         elif difficulty < 0.6:
             max_y_offset = 250 * difficulty
             start_x = lane_center_x + random.uniform(-20, 20)

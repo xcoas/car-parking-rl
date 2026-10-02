@@ -1,22 +1,30 @@
 import sys
 import os
+import torch
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'env')))
 
 from stable_baselines3 import PPO
-from stable_baselines3.common.env_checker import check_env
 from env.parking_env import ParkingEnv
 
-env = ParkingEnv(initial_difficulty=0.0, render_mode='human')
-model = PPO.load("ppo_parking_agent")
+if __name__ == "__main__":
+    env = ParkingEnv(initial_difficulty=0.1, render_mode='human')
+    model = PPO.load("ppo_parking_agent")
 
-obs, info = env.reset()
+    obs, info = env.reset()
 
-while True:
-    action, _states = model.predict(obs, deterministic=False)
-    obs, reward, terminated, truncated, info = env.step(action)
+    while True:
+        action, _states = model.predict(obs, deterministic=False)
 
-    if terminated or truncated:
-        print("reset")
-        obs, info = env.reset()
+        obs_tensor, _ = model.policy.obs_to_tensor(obs)
+        with torch.no_grad():
+            critic_value = model.policy.predict_values(obs_tensor).item()
+
+        env.renderer.critic_values.append(critic_value)
+
+        obs, reward, terminated, truncated, info = env.step(action)
+
+        if terminated or truncated:
+            print("reset")
+            obs, info = env.reset()

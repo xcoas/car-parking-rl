@@ -3,18 +3,23 @@ import pymunk.pygame_util
 import sys
 import math
 import os
+from collections import deque
 
 class ParkingRenderer:
-    def __init__(self, physics):
+    def __init__(self, physics, fps: int = 60):
         pygame.init()
 
         self.physics = physics
+        self.fps = fps
         self.screen = pygame.display.set_mode((self.physics.width, self.physics.height))
         self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
         self.clock = pygame.time.Clock()
 
         spot_width = physics.SPOT_WIDTH
         spot_depth = physics.SPOT_DEPTH
+
+        self.critic_values = deque(maxlen=100)
+        self.font = pygame.font.SysFont("Arial", 16, bold=True)
 
         target_row, target_spot = physics.blueprint['car_target_spot']
         target_x = ((target_row + 1) * physics.VERTICAL_LANE) + (target_row * spot_depth)
@@ -99,5 +104,32 @@ class ParkingRenderer:
         draw_position = rotated_image.get_rect(center=(x,y))
         self.screen.blit(rotated_image, draw_position)
 
+        if len(self.critic_values) > 1:
+            graph_x, graph_y = 15, 15
+            graph_w, graph_h = 200, 90
+            min_val, max_val = -25.0, 25.0
+
+            bg_rect = pygame.Rect(graph_x, graph_y, graph_w, graph_h)
+            pygame.draw.rect(self.screen, (35, 35, 35), bg_rect)
+
+            zero_y = graph_y + (graph_h // 2)
+            pygame.draw.line(self.screen, (90, 90, 90), (graph_x, zero_y), (graph_x + graph_w, zero_y), 1)
+
+            points = []
+            for i, val in enumerate(self.critic_values):
+                px = graph_x + int((i / 99.0) * graph_w)
+
+                clamped_val = max(min_val, min(max_val, val))
+                ratio = (clamped_val - min_val) / (max_val - min_val)
+                py = (graph_y + graph_h) - int(ratio * graph_h)
+                points.append((px, py))
+
+            last_val = self.critic_values[-1]
+            line_color = (50, 255, 50) if last_val >= 0 else (255, 70, 70)
+            pygame.draw.lines(self.screen, line_color, False, points, 2)
+
+            label = self.font.render(f"Critic: {last_val:+.1f}", True, line_color)
+            self.screen.blit(label, (graph_x + 6, graph_y + 4))
+
         pygame.display.flip()
-        self.clock.tick(60)
+        self.clock.tick(self.fps)
