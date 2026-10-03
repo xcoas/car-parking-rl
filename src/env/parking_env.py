@@ -10,9 +10,10 @@ class ParkingEnv(gym.Env):
         super().__init__()
         self.render_mode = render_mode
         self.difficulty = initial_difficulty
+        self.is_reminder = False
         self.current_step = 0
-        self.max_steps = max_steps
         self.action_repeat = 4
+        self.max_steps = max_steps // self.action_repeat
         self.fps = fps
 
         self.physics = ParkingPhysics(difficulty=self.difficulty)
@@ -64,7 +65,14 @@ class ParkingEnv(gym.Env):
         super().reset(seed=seed)
         self.current_step = 0
 
-        self.physics = ParkingPhysics(difficulty=self.difficulty)
+        if self.difficulty > 0.8 and np.random.uniform(0.0, 1.0) < 0.10:
+            self.is_reminder = True
+            active_difficulty = round(np.random.uniform(0.1, 0.8), 1)
+        else:
+            self.is_reminder = False
+            active_difficulty = self.difficulty
+
+        self.physics = ParkingPhysics(difficulty=active_difficulty)
         self.physics.crashed = False
 
         if self.render_mode == 'human':
@@ -118,7 +126,9 @@ class ParkingEnv(gym.Env):
         if self.render_mode == 'human':
             self.renderer.render()
 
-        info = {"is_success": self.physics.is_parked}
+        info = {"is_reminder": self.is_reminder}
+        if not self.is_reminder:
+            info["is_success"] = self.physics.is_parked
 
         return self._get_obs(), reward, terminated, trunacted, info
 

@@ -22,6 +22,9 @@ class DifficultyCallback(BaseCallback):
         infos = self.locals['infos']
         for done, info in zip(dones, infos):
             if done:
+                if info.get('is_reminder', False):
+                    continue
+
                 if info['is_success'] == True:
                     self.last_results.append(1)
                 else:
@@ -29,13 +32,13 @@ class DifficultyCallback(BaseCallback):
 
                 if (len(self.last_results) == 100):
                     win_percent = sum(self.last_results) / 100
-                    if win_percent > 0.7:
+                    if win_percent > 0.7 and self.current_difficulty < 1.0:
                         self.current_difficulty = min(1.0, self.current_difficulty + 0.1)
                         self.training_env.env_method("set_difficulty", self.current_difficulty)
                         print(f"Congrats car just graduated to new difficulty: {self.current_difficulty}, winrate: {win_percent:.1f}")
                         self.last_results.clear()
                         self.model.ep_success_buffer.clear()
-                    elif win_percent < 0.2:
+                    elif win_percent < 0.2 and self.current_difficulty > 0.0:
                         self.current_difficulty = max(0.0, self.current_difficulty - 0.1)
                         self.training_env.env_method("set_difficulty", self.current_difficulty)
                         print(f"Sadly our car couldnt keep up new difficulty: {self.current_difficulty}, winrate: {win_percent:.1f}")
@@ -62,8 +65,8 @@ if __name__ == "__main__":
 
     policy_kwargs = dict(
         net_arch=dict(
-            pi=[256, 256],
-            vf=[512, 256]
+            pi=[256, 256, 128],
+            vf=[512, 256, 128]
         )
     )
     model = PPO(
@@ -73,7 +76,8 @@ if __name__ == "__main__":
         verbose=1, 
         policy_kwargs=policy_kwargs,
         n_steps=16000,
-        batch_size=4000
+        batch_size=4000,
+        gamma=0.995
     )
     model.learn(total_timesteps=1_000_000_000, callback=callbacks)
 

@@ -31,7 +31,7 @@ class ParkingPhysics:
 
         self.is_parked = False
 
-        self.sensor_angles = [0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5]
+        self.sensor_angles = np.linspace(0, 360, 32, endpoint=False)
 
         self.width, self.height = self.calculate_map_size(self.blueprint)
 
@@ -149,7 +149,7 @@ class ParkingPhysics:
         return True
 
     def get_radar_readings(self):
-        max_distance = 200.0
+        max_distance = 350.0
         radar_readings = []
         angle = self.agent_body.angle
         pos_x, pos_y = self.agent_body.position
