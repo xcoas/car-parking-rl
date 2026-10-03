@@ -12,10 +12,10 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback, CallbackList
 
 class DifficultyCallback(BaseCallback):
-    def __init__(self, verbose = 1):
+    def __init__(self, verbose = 1, current_difficulty: float = 0.0):
         super().__init__(verbose)
         self.last_results = deque(maxlen=100)
-        self.current_difficulty = 0.0
+        self.current_difficulty = current_difficulty
 
     def _on_step(self) -> bool:
         dones = self.locals['dones']
@@ -75,7 +75,7 @@ if __name__ == "__main__":
         n_steps=16000,
         batch_size=4000
     )
-    model.learn(total_timesteps=20_000_000, callback=callbacks)
+    model.learn(total_timesteps=1_000_000_000, callback=callbacks)
 
     model.save("ppo_parking_agent")
-    print("model zapisany")
+    print("end of training")

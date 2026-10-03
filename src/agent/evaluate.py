@@ -9,13 +9,13 @@ from stable_baselines3 import PPO
 from env.parking_env import ParkingEnv
 
 if __name__ == "__main__":
-    env = ParkingEnv(initial_difficulty=0.1, render_mode='human')
+    env = ParkingEnv(initial_difficulty=0.5, render_mode='human')
     model = PPO.load("ppo_parking_agent")
 
     obs, info = env.reset()
 
     while True:
-        action, _states = model.predict(obs, deterministic=False)
+        action, _states = model.predict(obs, deterministic=True)
 
         obs_tensor, _ = model.policy.obs_to_tensor(obs)
         with torch.no_grad():
