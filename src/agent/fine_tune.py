@@ -24,7 +24,7 @@ if __name__ == "__main__":
     model = PPO.load(
         "ppo_parking_agent", 
         env=env,
-        custom_objects={"learning_rate": 0.0003}
+        custom_objects={"learning_rate": 0.00001}
     )
     
     difficulty_callback = DifficultyCallback(current_difficulty=START_DIFFICULTY)

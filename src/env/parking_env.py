@@ -6,7 +6,7 @@ from physics import ParkingPhysics
 from renderer import ParkingRenderer
 
 class ParkingEnv(gym.Env):
-    def __init__(self, initial_difficulty: float = 0.0, max_steps: int = 2000, render_mode=None, fps: int = 60):
+    def __init__(self, initial_difficulty: float = 0.0, max_steps: int = 2000, render_mode=None, fps: int = 60, show_rays = False, show_critic_graph = False):
         super().__init__()
         self.render_mode = render_mode
         self.difficulty = initial_difficulty
@@ -15,10 +15,12 @@ class ParkingEnv(gym.Env):
         self.action_repeat = 4
         self.max_steps = max_steps // self.action_repeat
         self.fps = fps
+        self.show_rays = show_rays
+        self.show_critic_graph = show_critic_graph
 
         self.physics = ParkingPhysics(difficulty=self.difficulty)
         if self.render_mode == 'human':
-            self.renderer = ParkingRenderer(self.physics, fps=self.fps)
+            self.renderer = ParkingRenderer(self.physics, fps=self.fps, show_rays=self.show_rays, show_critic_graph=self.show_critic_graph)
 
         self.action_space = spaces.Box(low=np.array([-0.5, -1.0], dtype=np.float32), high=np.array([1.0, 1.0], dtype=np.float32), shape=(2,), dtype=np.float32)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(7 + len(self.physics.sensor_angles),), dtype=np.float32)
@@ -119,7 +121,7 @@ class ParkingEnv(gym.Env):
             trunacted = True
             reward -= 10.0
 
-        reward -= 0.0025
+        reward -= 0.0025 * self.action_repeat
 
         self.current_step += 1
 

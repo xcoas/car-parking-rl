@@ -6,7 +6,7 @@ import os
 from collections import deque
 
 class ParkingRenderer:
-    def __init__(self, physics, fps: int = 60):
+    def __init__(self, physics, fps: int = 60, show_rays = False, show_critic_graph = False):
         pygame.init()
 
         self.physics = physics
@@ -18,8 +18,11 @@ class ParkingRenderer:
         spot_width = physics.SPOT_WIDTH
         spot_depth = physics.SPOT_DEPTH
 
+        self.show_rays = show_rays
+        self.show_critic_graph = show_critic_graph
         self.human_body = None
         self.score_text = ""
+        self.action_text = ""
 
         self.critic_values = deque(maxlen=100)
         self.font = pygame.font.SysFont("Arial", 16, bold=True)
@@ -92,19 +95,26 @@ class ParkingRenderer:
             draw_position = rotated_image.get_rect(center=(x,y))
             self.screen.blit(rotated_image, draw_position)
 
-        for start_pos, end_pos, is_hit in self.physics.radar_rays:
-            color = (255, 60, 60) if is_hit else (60, 255, 60)
-            pygame.draw.line(self.screen, color, start_pos, end_pos)
+        if self.show_rays:
+            for start_pos, end_pos, is_hit in self.physics.radar_rays:
+                color = (255, 60, 60) if is_hit else (60, 255, 60)
+                pygame.draw.line(self.screen, color, start_pos, end_pos)
 
-            if is_hit:
-                pygame.draw.circle(self.screen, (255, 0, 0), (int(end_pos[0]), int(end_pos[1])), 4)
+                if is_hit:
+                    pygame.draw.circle(self.screen, (255, 0, 0), (int(end_pos[0]), int(end_pos[1])), 4)
 
         body_player = self.physics.agent_body
         sprite = self.player_car_svg
         x, y = body_player.position
         angle = -math.degrees(body_player.angle)
         rotated_image = pygame.transform.rotate(sprite, angle)
-        draw_position = rotated_image.get_rect(center=(x,y))
+
+        if self.human_body is not None:
+            rotated_image.set_alpha(120)
+        else:
+            rotated_image.set_alpha(255)
+
+        draw_position = rotated_image.get_rect(center=(x, y))
         self.screen.blit(rotated_image, draw_position)
 
         if self.human_body is not None:
@@ -115,7 +125,7 @@ class ParkingRenderer:
             self.screen.blit(h_rotated, h_rect)
 
             ai_tag = self.font.render("AI", True, (80, 180, 255))
-            human_tag = self.font.render("TY", True, (80, 255, 80))
+            human_tag = self.font.render("YOU", True, (80, 255, 80))
             self.screen.blit(ai_tag, (int(x) - 10, int(y) - 35))
             self.screen.blit(human_tag, (int(hx) - 10, int(hy) - 35))
 
@@ -124,7 +134,12 @@ class ParkingRenderer:
             score_rect = score_surf.get_rect(center=(self.physics.width // 2, 25))
             self.screen.blit(score_surf, score_rect)
 
-        if len(self.critic_values) > 1:
+        if self.action_text:
+            action_surf = self.font.render(self.action_text, True, (255, 255, 255), (35, 35, 35))
+            action_rect = action_surf.get_rect(center=(self.physics.width // 2, 25))
+            self.screen.blit(action_surf, action_rect)
+
+        if len(self.critic_values) > 1 and self.show_critic_graph:
             graph_x, graph_y = 15, 15
             graph_w, graph_h = 200, 90
             min_val, max_val = -25.0, 25.0

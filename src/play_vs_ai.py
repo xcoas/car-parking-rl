@@ -30,7 +30,7 @@ def get_human_action():
     return [throttle * 300, steer * 150]
 
 if __name__ == "__main__":
-    DIFFICULTY = 0.5
+    DIFFICULTY = 1.0
     MODEL_PATH = "ppo_parking_agent"
 
     env = ParkingEnv(initial_difficulty=DIFFICULTY, render_mode=None, fps=60)
@@ -47,6 +47,11 @@ if __name__ == "__main__":
         np.random.seed(round_seed)
         random.seed(round_seed)
         obs, _ = env.reset(seed=round_seed)
+        if env.is_reminder:
+            np.random.seed(round_seed)
+            random.seed(round_seed)
+            env.physics = ParkingPhysics(difficulty=DIFFICULTY)
+            obs = env._get_obs()
 
         np.random.seed(round_seed)
         random.seed(round_seed)
