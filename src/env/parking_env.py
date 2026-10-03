@@ -96,7 +96,8 @@ class ParkingEnv(gym.Env):
                 break
 
         self.dist_new = self.get_car_distance()
-        reward += (self.dist_old - self.dist_new) * 0.001
+        distance_reward_scale = max(0.0, (0.8 - self.difficulty) / 0.8)
+        reward += (self.dist_old - self.dist_new) * 0.001 * distance_reward_scale
 
         if self.physics.crashed == True:
             terminated = True
@@ -108,7 +109,7 @@ class ParkingEnv(gym.Env):
 
         if self.current_step >= self.max_steps:
             trunacted = True
-            reward -= 2.0
+            reward -= 10.0
 
         reward -= 0.0025
 

@@ -2,6 +2,7 @@
 venv/
 
 checkpoints
+checkpoints_finetune
 
 __pycache__/
 *.py[cod]

@@ -18,6 +18,9 @@ class ParkingRenderer:
         spot_width = physics.SPOT_WIDTH
         spot_depth = physics.SPOT_DEPTH
 
+        self.human_body = None
+        self.score_text = ""
+
         self.critic_values = deque(maxlen=100)
         self.font = pygame.font.SysFont("Arial", 16, bold=True)
 
@@ -103,6 +106,23 @@ class ParkingRenderer:
         rotated_image = pygame.transform.rotate(sprite, angle)
         draw_position = rotated_image.get_rect(center=(x,y))
         self.screen.blit(rotated_image, draw_position)
+
+        if self.human_body is not None:
+            hx, hy = self.human_body.position
+            h_angle = -math.degrees(self.human_body.angle)
+            h_rotated = pygame.transform.rotate(self.player_car_svg, h_angle)
+            h_rect = h_rotated.get_rect(center=(hx, hy))
+            self.screen.blit(h_rotated, h_rect)
+
+            ai_tag = self.font.render("AI", True, (80, 180, 255))
+            human_tag = self.font.render("TY", True, (80, 255, 80))
+            self.screen.blit(ai_tag, (int(x) - 10, int(y) - 35))
+            self.screen.blit(human_tag, (int(hx) - 10, int(hy) - 35))
+
+        if self.score_text:
+            score_surf = self.font.render(self.score_text, True, (255, 255, 255), (35, 35, 35))
+            score_rect = score_surf.get_rect(center=(self.physics.width // 2, 25))
+            self.screen.blit(score_surf, score_rect)
 
         if len(self.critic_values) > 1:
             graph_x, graph_y = 15, 15
