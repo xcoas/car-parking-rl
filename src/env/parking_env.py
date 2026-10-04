@@ -67,7 +67,7 @@ class ParkingEnv(gym.Env):
         super().reset(seed=seed)
         self.current_step = 0
 
-        if self.difficulty > 0.8 and np.random.uniform(0.0, 1.0) < 0.10:
+        if self.difficulty > 0.8 and np.random.uniform(0.0, 1.0) < 0.15:
             self.is_reminder = True
             active_difficulty = round(np.random.uniform(0.1, 0.8), 1)
         else:

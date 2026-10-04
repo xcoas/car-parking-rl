@@ -13,7 +13,7 @@ from stable_baselines3.common.callbacks import CallbackList, CheckpointCallback
 from train import DifficultyCallback
 
 if __name__ == "__main__":
-    START_DIFFICULTY = 0.0
+    START_DIFFICULTY = 1.0
 
     test_env = ParkingEnv(initial_difficulty=START_DIFFICULTY)
     check_env(test_env)
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     model = PPO.load(
         "ppo_parking_agent", 
         env=env,
-        custom_objects={"learning_rate": 0.00003}
+        custom_objects={"learning_rate": 0.00003, "ent_coef": 0.000005}
     )
     
     difficulty_callback = DifficultyCallback(current_difficulty=START_DIFFICULTY)
