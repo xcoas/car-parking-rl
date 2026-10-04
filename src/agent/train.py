@@ -1,6 +1,8 @@
 import sys
 import os
 from collections import deque
+import csv
+import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'env')))
@@ -16,6 +18,7 @@ class DifficultyCallback(BaseCallback):
         super().__init__(verbose)
         self.last_results = deque(maxlen=100)
         self.current_difficulty = current_difficulty
+        self.csv_path = 'training_logs.csv'
 
     def _on_step(self) -> bool:
         dones = self.locals['dones']
@@ -48,6 +51,44 @@ class DifficultyCallback(BaseCallback):
         self.logger.record("curriculum/difficulty", self.current_difficulty)
         return True
 
+    def _on_rollout_end(self):
+        if len(self.model.ep_info_buffer) == 0:
+            return
+
+        timesteps = self.num_timesteps
+        difficulty = round(self.current_difficulty, 1)
+
+        ep_rew_mean = round(float(np.mean([ep["r"] for ep in self.model.ep_info_buffer])), 2)
+        ep_len_mean = round(float(np.mean([ep["l"] for ep in self.model.ep_info_buffer])), 1)
+
+        if len(self.model.ep_success_buffer) > 0:
+            success_rate = round(float(np.mean(self.model.ep_success_buffer)), 3)
+        else:
+            success_rate = 0.0
+
+        file_exists = os.path.exists(self.csv_path)
+
+        with open(self.csv_path, mode='a', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+
+            if not file_exists:
+                writer.writerow([
+                    "timesteps",
+                    "difficulty",
+                    "success_rate",
+                    "ep_rew_mean",
+                    "ep_len_mean"
+                ])
+
+            writer.writerow([
+                timesteps,
+                difficulty,
+                success_rate,
+                ep_rew_mean,
+                ep_len_mean
+            ])
+        
+
 if __name__ == "__main__":
     test_env = ParkingEnv(initial_difficulty=0.0)
     check_env(test_env)
@@ -79,7 +120,7 @@ if __name__ == "__main__":
         batch_size=4000,
         gamma=0.995
     )
-    model.learn(total_timesteps=1_000_000_000, callback=callbacks)
+    model.learn(total_timesteps=1_000_000_000, callback=callbacks, reset_num_timesteps=False)
 
     model.save("ppo_parking_agent")
     print("end of training")

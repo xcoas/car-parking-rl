@@ -34,7 +34,7 @@ if __name__ == "__main__":
     MODEL_PATH = "ppo_parking_agent"
 
     env = ParkingEnv(initial_difficulty=DIFFICULTY, render_mode=None, fps=60)
-    renderer = ParkingEnv(initial_difficulty=DIFFICULTY, render_mode='human', fps=60).renderer
+    renderer = ParkingEnv(initial_difficulty=DIFFICULTY, render_mode='human', fps=60, show_critic_graph=True).renderer
 
     model = PPO.load(MODEL_PATH)
 
