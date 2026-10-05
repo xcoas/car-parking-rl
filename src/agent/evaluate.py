@@ -9,7 +9,7 @@ from stable_baselines3 import PPO
 from env.parking_env import ParkingEnv
 
 if __name__ == "__main__":
-    env = ParkingEnv(initial_difficulty=0.6, render_mode='human', show_rays = True, show_critic_graph = True)
+    env = ParkingEnv(initial_difficulty=1.0, render_mode='human', show_rays = True, show_critic_graph = True)
     model = PPO.load("ppo_parking_agent")
 
     obs, info = env.reset()

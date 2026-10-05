@@ -23,6 +23,10 @@ class ParkingRenderer:
         self.human_body = None
         self.score_text = ""
         self.action_text = ""
+        self.agent_label = "AI"
+        self.agent_alpha = 0.5
+        self.human_label = "YOU"
+        self.human_alpha = 1.0
 
         self.critic_values = deque(maxlen=100)
         self.font = pygame.font.SysFont("Arial", 16, bold=True)
@@ -95,6 +99,8 @@ class ParkingRenderer:
             draw_position = rotated_image.get_rect(center=(x,y))
             self.screen.blit(rotated_image, draw_position)
 
+        rotated_image.set_alpha(255 * self.human_alpha)
+
         if self.show_rays:
             for start_pos, end_pos, is_hit in self.physics.radar_rays:
                 color = (255, 60, 60) if is_hit else (60, 255, 60)
@@ -110,9 +116,7 @@ class ParkingRenderer:
         rotated_image = pygame.transform.rotate(sprite, angle)
 
         if self.human_body is not None:
-            rotated_image.set_alpha(120)
-        else:
-            rotated_image.set_alpha(255)
+            rotated_image.set_alpha(255 * self.agent_alpha)
 
         draw_position = rotated_image.get_rect(center=(x, y))
         self.screen.blit(rotated_image, draw_position)
@@ -124,8 +128,8 @@ class ParkingRenderer:
             h_rect = h_rotated.get_rect(center=(hx, hy))
             self.screen.blit(h_rotated, h_rect)
 
-            ai_tag = self.font.render("AI", True, (80, 180, 255))
-            human_tag = self.font.render("YOU", True, (80, 255, 80))
+            ai_tag = self.font.render(self.agent_label, True, (80, 180, 255))
+            human_tag = self.font.render(self.human_label, True, (80, 255, 80))
             self.screen.blit(ai_tag, (int(x) - 10, int(y) - 35))
             self.screen.blit(human_tag, (int(hx) - 10, int(hy) - 35))
 
