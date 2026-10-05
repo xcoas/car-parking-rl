@@ -13,7 +13,7 @@ from env.parking_env import ParkingEnv
 from env.physics import ParkingPhysics
 
 if __name__ == "__main__":
-    DIFFICULTY = 0.6
+    DIFFICULTY = 0.7
 
     MODEL_1_PATH = "./ppo_parking_agent (modelv0).zip"
     MODEL_2_PATH = "./ppo_parking_agent (modelv1).zip"
