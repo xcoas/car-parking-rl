@@ -51,6 +51,19 @@ def get_critic_value(model: PPO, obs: np.ndarray) -> float:
     with torch.no_grad():
         return round(float(model.policy.predict_values(obs_tensor).item()), 2)
 
+def get_model_arch(model: PPO) -> dict:
+    actor_layers = [
+        layer.out_features
+        for layer in model.policy.mlp_extractor.policy_net
+        if isinstance(layer, torch.nn.Linear)
+    ]
+    critic_layers = [
+        layer.out_features 
+        for layer in model.policy.mlp_extractor.value_net 
+        if isinstance(layer, torch.nn.Linear)
+    ]
+    return {"actor": actor_layers, "critic": critic_layers}
+
 def run_single_episode(model: PPO, difficulty: float, seed: int) -> dict:
     game_model = model
     difficulty = difficulty
@@ -118,7 +131,7 @@ def get_model_info():
         observation_space_size = MODELS['v0'].observation_space.shape[0],
         lidar_rays = {name: model.observation_space.shape[0] - 7 for name, model in MODELS.items()},
         action_space = ['throttle', 'steer'],
-        network_architecture = {"actor": [256,256,128], "critic": [512,256,128]},
+        network_architecture = {name: get_model_arch(model) for name, model in MODELS.items()}
     )
 
 @app.post("/simulate", response_model=SimulationResponse)
