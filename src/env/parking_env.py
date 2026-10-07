@@ -74,7 +74,7 @@ class ParkingEnv(gym.Env):
             self.is_reminder = False
             active_difficulty = self.difficulty
 
-        self.physics = ParkingPhysics(difficulty=active_difficulty)
+        self.physics = ParkingPhysics(difficulty=active_difficulty, seed=seed)
         self.physics.crashed = False
 
         if self.render_mode == 'human':

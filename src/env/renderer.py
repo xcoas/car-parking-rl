@@ -15,18 +15,21 @@ class ParkingRenderer:
         self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
         self.clock = pygame.time.Clock()
 
+        self.SPOT_WIDTH = physics.SPOT_WIDTH
+        self.SPOT_DEPTH = physics.SPOT_DEPTH
+        self.VERTICAL_LANE = physics.VERTICAL_LANE
+        self.HORIZONTAL_LANE = physics.HORIZONTAL_LANE
+
         spot_width = physics.SPOT_WIDTH
         spot_depth = physics.SPOT_DEPTH
 
         self.show_rays = show_rays
         self.show_critic_graph = show_critic_graph
-        self.human_body = None
+
+        self.all_agents_data = []
+
         self.score_text = ""
         self.action_text = ""
-        self.agent_label = "AI"
-        self.agent_alpha = 0.5
-        self.human_label = "YOU"
-        self.human_alpha = 1.0
 
         self.critic_values = deque(maxlen=100)
         self.font = pygame.font.SysFont("Arial", 16, bold=True)
@@ -68,6 +71,13 @@ class ParkingRenderer:
 
         self.player_car_svg = pygame.transform.scale(player_car_svg, (self.physics.PLAYER_CAR_LENGTH,self.physics.PLAYER_CAR_WIDTH))
 
+    def update_blueprint(self, blueprint):
+        self.blueprint = blueprint
+        target_row, target_spot = blueprint['car_target_spot']
+        target_x = ((target_row + 1) * self.physics.VERTICAL_LANE) + (target_row * self.physics.SPOT_DEPTH)
+        target_y = self.HORIZONTAL_LANE + (target_spot * self.physics.SPOT_WIDTH)
+        self.target_rect = pygame.Rect(target_x, target_y, self.physics.SPOT_DEPTH, self.physics.SPOT_WIDTH)
+
     def render(self):
         self.screen.fill((90, 90, 90))
 
@@ -99,8 +109,6 @@ class ParkingRenderer:
             draw_position = rotated_image.get_rect(center=(x,y))
             self.screen.blit(rotated_image, draw_position)
 
-        rotated_image.set_alpha(255 * self.human_alpha)
-
         if self.show_rays:
             for start_pos, end_pos, is_hit in self.physics.radar_rays:
                 color = (255, 60, 60) if is_hit else (60, 255, 60)
@@ -109,29 +117,31 @@ class ParkingRenderer:
                 if is_hit:
                     pygame.draw.circle(self.screen, (255, 0, 0), (int(end_pos[0]), int(end_pos[1])), 4)
 
-        body_player = self.physics.agent_body
-        sprite = self.player_car_svg
-        x, y = body_player.position
-        angle = -math.degrees(body_player.angle)
-        rotated_image = pygame.transform.rotate(sprite, angle)
+        agents_to_draw = self.all_agents_data if self.all_agents_data else [{"body": self.physics.agent_body, "name": "AI", "alpha": 1.0, "crashed": False}]
 
-        if self.human_body is not None:
-            rotated_image.set_alpha(255 * self.agent_alpha)
+        for idx, agent_data in enumerate(agents_to_draw):
+            body = agent_data['body']
+            name = agent_data['name']
+            crashed = agent_data.get('crashed', False)
+            parked = agent_data.get('parked', False)
+            alpha = agent_data.get('alpha', 1.0)
 
-        draw_position = rotated_image.get_rect(center=(x, y))
-        self.screen.blit(rotated_image, draw_position)
+            x, y = body.position
+            angle = -math.degrees(body.angle)
+            sprite = self.player_car_svg.copy()
 
-        if self.human_body is not None:
-            hx, hy = self.human_body.position
-            h_angle = -math.degrees(self.human_body.angle)
-            h_rotated = pygame.transform.rotate(self.player_car_svg, h_angle)
-            h_rect = h_rotated.get_rect(center=(hx, hy))
-            self.screen.blit(h_rotated, h_rect)
+            rotated_image = pygame.transform.rotate(sprite, angle)
+            rotated_image.set_alpha(int(255 * alpha))
+            draw_position = rotated_image.get_rect(center=(x, y))
+            self.screen.blit(rotated_image, draw_position)
 
-            ai_tag = self.font.render(self.agent_label, True, (80, 180, 255))
-            human_tag = self.font.render(self.human_label, True, (80, 255, 80))
-            self.screen.blit(ai_tag, (int(x) - 10, int(y) - 35))
-            self.screen.blit(human_tag, (int(hx) - 10, int(hy) - 35))
+            text_color = (255, 100, 100) if crashed else (100, 255, 100) if parked else (255, 255, 255)
+            tag = self.font.render(name, True, text_color)
+            tag_rect = tag.get_rect(center=(x, y - 35))
+
+            tag_rect.y -= (idx % 3) * 15
+
+            self.screen.blit(tag, tag_rect)
 
         if self.score_text:
             score_surf = self.font.render(self.score_text, True, (255, 255, 255), (35, 35, 35))

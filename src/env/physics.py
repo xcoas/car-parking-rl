@@ -4,7 +4,11 @@ import math
 import numpy as np
 
 class ParkingPhysics:
-    def __init__(self, blueprint=None, difficulty: float = 0.0):
+    def __init__(self, blueprint=None, difficulty: float = 0.0, seed: int = None):
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
+
         self.SPOT_WIDTH = 50
         self.SPOT_DEPTH = 100
         self.VERTICAL_LANE = 150

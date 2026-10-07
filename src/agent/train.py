@@ -87,6 +87,8 @@ class DifficultyCallback(BaseCallback):
                 ep_rew_mean,
                 ep_len_mean
             ])
+
+        self.model.save("ppo_parking_agent")
         
 
 if __name__ == "__main__":
@@ -106,14 +108,14 @@ if __name__ == "__main__":
 
     policy_kwargs = dict(
         net_arch=dict(
-            pi=[256, 256, 128],
-            vf=[512, 256, 128]
+            pi=[128, 128, 64],
+            vf=[128, 126, 128]
         )
     )
     model = PPO(
         "MlpPolicy", 
         env, 
-        ent_coef=0.00005, 
+        ent_coef=0.00005,
         verbose=1, 
         policy_kwargs=policy_kwargs,
         n_steps=16000,

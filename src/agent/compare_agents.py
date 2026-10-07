@@ -1,5 +1,6 @@
 import sys
 import os
+import glob
 import pygame
 import numpy as np
 import torch
@@ -13,16 +14,39 @@ from env.parking_env import ParkingEnv
 from env.physics import ParkingPhysics
 
 if __name__ == "__main__":
-    DIFFICULTY = 0.7
+    DIFFICULTY = 1.0
 
-    MODEL_1_PATH = "./ppo_parking_agent (modelv0).zip"
-    MODEL_2_PATH = "./ppo_parking_agent (modelv1).zip"
+    CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+    ROOT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, '..'))
+    MODELS_DIR = os.path.abspath(os.path.join(ROOT_DIR, 'SavedModels'))
+    MODEL_FILES = glob.glob(os.path.join(MODELS_DIR, '*.zip'))
 
-    env_1 = ParkingEnv(initial_difficulty=DIFFICULTY, render_mode=None, show_critic_graph=False, show_rays=False)
-    env_2 = ParkingEnv(initial_difficulty=DIFFICULTY, render_mode=None, show_critic_graph=False, show_rays=False)
-    human_physics = ParkingPhysics(difficulty=DIFFICULTY)
-    model_1 = PPO.load(MODEL_1_PATH)
-    model_2 = PPO.load(MODEL_2_PATH)
+    agents = []
+    seed = random.randint(0, 1_000_000)
+
+    for i, model_path in enumerate(MODEL_FILES):
+        model_name = os.path.basename(model_path).replace(".zip", "")
+
+        model_env = ParkingEnv(initial_difficulty=DIFFICULTY, render_mode=None, show_critic_graph=False, show_rays=False)
+        model_loaded = PPO.load(model_path)
+        model_obs, _ = model_env.reset(seed=seed)
+
+        obj = {
+            "id": i,
+            "model_name": model_name,
+            "model_loaded": model_loaded,
+            "env": model_env,
+            "obs": model_obs,
+            "crashed": False,
+            "parked": False,
+            "alpha": 0.9,
+            "steps": 0,
+            "score": 0,
+        }
+
+        agents.append(obj)
+
+    print("successfully loaded all models")
 
     renderer = ParkingEnv(
         initial_difficulty=DIFFICULTY, 
@@ -32,88 +56,86 @@ if __name__ == "__main__":
         show_rays=False
     ).renderer
 
-    renderer.agent_label = "v0"
-    renderer.human_label = "v1"
-    renderer.agent_alpha = 1.0
-    renderer.human_alpha = 1.0
-
-    score_1 = 0
-    score_2 = 0
+    if len(agents) > 0:
+        renderer.physics = agents[0]['env'].physics
 
     while True:
         seed = random.randint(0, 1_000_000)
+        scores_str = " | ".join([f"{a['model_name']}: {a['score']}" for a in agents])
+        renderer.score_text = f"Wyniki: {scores_str}  (Diff: {DIFFICULTY})"
 
-        random.seed(seed)
-        np.random.seed(seed)
-        obs_1, _ = env_1.reset(seed=seed)
-        if env_1.is_reminder:
+        for agent in agents:
             random.seed(seed)
             np.random.seed(seed)
-            env_1.physics = ParkingPhysics(difficulty=DIFFICULTY)
-            obs_1 = env_1._get_obs()
+            
+            obs, _ = agent['env'].reset(seed=seed)
+            agent['crashed'] = False
+            agent['parked'] = False
+            agent['steps'] = 0
 
-        random.seed(seed)
-        np.random.seed(seed)
-        obs_2, _ = env_2.reset(seed=seed)
-        if env_2.is_reminder:
-            random.seed(seed)
-            np.random.seed(seed)
-            env_2.physics = ParkingPhysics(difficulty=DIFFICULTY)
-            obs_2 = env_2._get_obs()
+        if len(agents) > 0:
+            renderer.physics = agents[0]['env'].physics
+            renderer.update_blueprint(agents[0]['env'].physics.blueprint)
 
-        renderer.physics = env_1.physics
-        renderer.human_body = env_2.physics.agent_body
-        renderer.score_text = f"Model v0: {score_1}   |   Model v1: {score_2}  (Diff: {DIFFICULTY})"
-
-        done_1 = False
-        done_2 = False
         round_over = False
 
         while not round_over:
-            if not done_1:
-                action_1, _ = model_1.predict(obs_1, deterministic=False)
-            else:
-                action_1 = [0.0, 0.0]
+            active_agents = [a for a in agents if not a['crashed'] and not a['parked']]
+            
+            if not active_agents:
+                break
 
-            if not done_2:
-                action_2, _ = model_2.predict(obs_2, deterministic=False)
-            else:
-                action_2 = [0.0, 0.0]
+            for agent in active_agents:
+                action, _ = agent['model_loaded'].predict(agent['obs'], deterministic=True)
+                agent['current_action'] = action
 
-            throttle_1 = action_1[0] * 300
-            steer_1 = action_1[1] * 150
+            action_repeat = agents[0]['env'].action_repeat
+            
+            for _ in range(action_repeat):
+                for agent in active_agents:
+                    if agent['crashed'] or agent['parked']:
+                        continue
+                        
+                    throttle = agent['current_action'][0] * 300
+                    steer = agent['current_action'][1] * 150
+                    
+                    agent['env'].physics.step([throttle, steer])
+                    
+                    if agent['env'].physics.crashed:
+                        agent['crashed'] = True
+                    elif agent['env'].physics.is_parked:
+                        agent['parked'] = True
+                        agent['score'] += 1
 
-            throttle_2 = action_2[0] * 300
-            steer_2 = action_2[1] * 150
+                renderer.all_agents_data = [
+                    {
+                        "body": a['env'].physics.agent_body, 
+                        "name": str(a['model_name']),
+                        "crashed": a['crashed'],
+                        "parked": a['parked'],
+                        "alpha": a['alpha']
+                    } 
+                    for a in agents
+                ]
+                renderer.render()
 
-            if not done_1:
-                env_1.physics.step([throttle_1, steer_1])
-                if env_1.physics.crashed or env_1.physics.is_parked:
-                    done_1 = True
+            for agent in active_agents:
+                if not agent['crashed'] and not agent['parked']:
+                    agent['obs'] = agent['env']._get_obs()
+                    agent['steps'] += 1
+                    agent['env'].current_step += 1
 
-            if not done_2:
-                env_2.physics.step([throttle_2, steer_2])
-                if env_2.physics.crashed or env_2.physics.is_parked:
-                    done_2 = True
+            if round_over:
+                break
 
+            renderer.all_agents_data = [
+                {
+                    "body": a['env'].physics.agent_body, 
+                    "name": str(a['model_name']),
+                    "crashed": a['crashed'],
+                    "parked": a['parked'],
+                    "alpha": a['alpha']
+                } 
+                for a in agents
+            ]
             renderer.render()
-
-            if env_2.physics.is_parked:
-                score_2 += 1
-                print("Model v1 won")
-                round_over = True
-                break
-            elif env_1.physics.is_parked:
-                score_1 += 1
-                print("Model v0 won")
-                round_over = True
-                break
-            elif done_1 and done_2:
-                print("Nobody won")
-                round_over = True
-                break
-
-            if not done_1:
-                obs_1 = env_1._get_obs()
-            if not done_2:
-                obs_2 = env_2._get_obs()
