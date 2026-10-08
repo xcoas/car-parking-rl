@@ -13,6 +13,8 @@ from stable_baselines3 import PPO
 from env.parking_env import ParkingEnv
 from env.physics import ParkingPhysics
 
+from LoadAgents import load_agents
+
 if __name__ == "__main__":
     DIFFICULTY = 1.0
 
@@ -21,30 +23,9 @@ if __name__ == "__main__":
     MODELS_DIR = os.path.abspath(os.path.join(ROOT_DIR, 'SavedModels'))
     MODEL_FILES = glob.glob(os.path.join(MODELS_DIR, '*.zip'))
 
-    agents = []
     seed = random.randint(0, 1_000_000)
 
-    for i, model_path in enumerate(MODEL_FILES):
-        model_name = os.path.basename(model_path).replace(".zip", "")
-
-        model_env = ParkingEnv(initial_difficulty=DIFFICULTY, render_mode=None, show_critic_graph=False, show_rays=False)
-        model_loaded = PPO.load(model_path)
-        model_obs, _ = model_env.reset(seed=seed)
-
-        obj = {
-            "id": i,
-            "model_name": model_name,
-            "model_loaded": model_loaded,
-            "env": model_env,
-            "obs": model_obs,
-            "crashed": False,
-            "parked": False,
-            "alpha": 0.9,
-            "steps": 0,
-            "score": 0,
-        }
-
-        agents.append(obj)
+    agents = load_agents(MODEL_FILES, DIFFICULTY, seed)
 
     print("successfully loaded all models")
 
