@@ -57,5 +57,4 @@ class CompareResponse(BaseModel):
     difficulty: float
     episodes_played: int
     winner: str
-    model_v0_stats: ModelStats
-    model_v1_stats: ModelStats
+    model_stats: dict[str, ModelStats]

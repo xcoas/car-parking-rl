@@ -16,7 +16,7 @@ from env.physics import ParkingPhysics
 from LoadAgents import load_agents
 
 if __name__ == "__main__":
-    DIFFICULTY = 1.0
+    DIFFICULTY = 0.6
 
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
     ROOT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, '..'))

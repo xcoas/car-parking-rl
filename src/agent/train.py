@@ -108,8 +108,8 @@ if __name__ == "__main__":
 
     policy_kwargs = dict(
         net_arch=dict(
-            pi=[128, 128, 64],
-            vf=[128, 126, 128]
+            pi=[512, 512],
+            vf=[512, 512]
         )
     )
     model = PPO(

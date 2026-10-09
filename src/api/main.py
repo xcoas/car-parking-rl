@@ -2,6 +2,7 @@ import sys
 import os
 import random
 import numpy as np
+import glob
 import torch
 from fastapi import FastAPI, HTTPException
 
@@ -10,12 +11,15 @@ SRC_DIR = os.path.abspath(os.path.join(CURRENT_DIR, '..'))
 ENV_DIR = os.path.abspath(os.path.join(SRC_DIR, 'env'))
 AGENT_DIR = os.path.abspath(os.path.join(SRC_DIR, 'agent'))
 ROOT_DIR = os.path.abspath(os.path.join(SRC_DIR, '..'))
+MODELS_DIR = os.path.abspath(os.path.join(SRC_DIR, 'SavedModels'))
+MODEL_FILES = glob.glob(os.path.join(MODELS_DIR, '*.zip'))
 
 sys.path.extend([CURRENT_DIR, SRC_DIR, ENV_DIR, AGENT_DIR, ROOT_DIR])
 
 from stable_baselines3 import PPO
 from env.parking_env import ParkingEnv
 from env.physics import ParkingPhysics
+from agent.LoadAgents import load_agents
 from schemas import (
     ModelInfoResponse,
     Simulation_Request,
@@ -40,9 +44,10 @@ def find_model_path(filename: str) -> str:
 
 MODELS = {}
 try:
-    MODELS["v0"] = PPO.load(find_model_path("ppo_parking_agent (modelv0).zip"))
-    MODELS["v1"] = PPO.load(find_model_path("ppo_parking_agent (modelv1).zip"))
-    print("model v0 and v1 successfuly loaded")
+    agents = load_agents(MODEL_FILES, DIFFICULTY=1.0, seed=42)
+
+    for agent in agents:
+        MODELS[agent['model_name']] = agent['model_loaded']
 except Exception as e:
     print(f"failed to load models: {e}")
 
@@ -123,12 +128,14 @@ def run_single_episode(model: PPO, difficulty: float, seed: int) -> dict:
 
 @app.get("/model-info", response_model=ModelInfoResponse)
 def get_model_info():
-    if "v0" not in MODELS:
+    if not MODELS:
         raise HTTPException(status_code=503, detail="Models not loaded")
+
+    first_model = list(MODELS.values())[0]
 
     return ModelInfoResponse(
         available_models = list(MODELS.keys()),
-        observation_space_size = MODELS['v0'].observation_space.shape[0],
+        observation_space_size = first_model.observation_space.shape[0],
         lidar_rays = {name: model.observation_space.shape[0] - 7 for name, model in MODELS.items()},
         action_space = ['throttle', 'steer'],
         network_architecture = {name: get_model_arch(model) for name, model in MODELS.items()}
@@ -165,52 +172,61 @@ def simulate(request: Simulation_Request):
 
 @app.post("/compare", response_model=CompareResponse)
 def compare_models(request: CompareRequest):
-    if "v0" not in MODELS or "v1" not in MODELS:
-        raise HTTPException(status_code=503, detail="there is no v0 and v1 loaded models")
+    keys = list(MODELS.keys())
+    if len(keys) < 2:
+        raise HTTPException(
+            status_code=503, 
+            detail="You need atleast 2 models to use compare"
+        )
 
-    v0_wins, v0_crashes, v0_timesteps = 0, 0, 0
-    v1_wins, v1_crashes, v1_timesteps = 0, 0, 0
+    wins = {name: 0 for name in keys}
+    crashes = {name: 0 for name in keys}
+    timesteps = {name: 0 for name in keys}
+    stats = {}
 
     for _ in range(request.episodes):
         seed = random.randint(0, 1_000_000)
 
-        v0_return = run_single_episode(MODELS['v0'], difficulty=request.difficulty, seed=seed)
-        v1_return = run_single_episode(MODELS['v1'], difficulty=request.difficulty, seed=seed)
+        for model_name in keys:
+            result = run_single_episode(
+                MODELS[model_name], 
+                difficulty=request.difficulty, 
+                seed=seed
+            )
 
-        if v0_return['is_success'] == True:
-            v0_wins += 1
-            v0_timesteps += v0_return['steps_taken']
-        if v1_return['is_success'] == True:
-            v1_wins += 1
-            v1_timesteps += v1_return['steps_taken']
+            if result['is_success']:
+                wins[model_name] += 1
+                timesteps[model_name] += result['steps_taken']
+            if result['crashed']:
+                crashes[model_name] += 1
 
-        if v0_return['crashed'] == True:
-            v0_crashes += 1
-        if v1_return['crashed'] == True:
-            v1_crashes += 1
+    highest_winrate = -1.0
+    winner_name = 'tie'
+    is_tie = False
 
-    v0_winrate = round((v0_wins / request.episodes) * 100.0, 2) if request.episodes > 0 else 0.0
-    v1_winrate = round((v1_wins / request.episodes) * 100.0, 2) if request.episodes > 0 else 0.0
+    for model_name in keys:
+        winrate = round((wins[model_name] / request.episodes) * 100.0, 2) if request.episodes > 0 else 0.0
+        avg_steps = round((timesteps[model_name] / wins[model_name]), 2) if wins[model_name] > 0 else 0.0
+        
+        stats[model_name] = ModelStats(
+            win_rate_percent=winrate, 
+            crashes=crashes[model_name], 
+            avg_steps_on_success=avg_steps
+        )
 
-    v0_avg_steps = round((v0_timesteps / v0_wins), 2) if v0_wins > 0 else 0.0
-    v1_avg_steps = round((v1_timesteps / v1_wins), 2) if v1_wins > 0 else 0.0
+        if winrate > highest_winrate:
+            highest_winrate = winrate
+            winner_name = model_name
+            is_tie = False
+        elif winrate == highest_winrate:
+            is_tie = True
 
-    stats_v0 = ModelStats(win_rate_percent=v0_winrate, crashes=v0_crashes, avg_steps_on_success=v0_avg_steps)
-    stats_v1 = ModelStats(win_rate_percent=v1_winrate, crashes=v1_crashes, avg_steps_on_success=v1_avg_steps)
-
-    winner = ''
-
-    if stats_v0.win_rate_percent > stats_v1.win_rate_percent:
-        winner = 'v0'
-    elif stats_v0.win_rate_percent < stats_v1.win_rate_percent:
-        winner = 'v1'
-    else:
-        winner = 'tie'
+    if is_tie:
+        winner_name = 'tie'
 
     return CompareResponse(
         difficulty=request.difficulty,
         episodes_played=request.episodes,
-        winner=winner,
-        model_v0_stats=stats_v0,
-        model_v1_stats=stats_v1
+        winner=winner_name,
+        model_stats=stats
     )
