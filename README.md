@@ -60,23 +60,47 @@ Training autonomous agents with sparse rewards required extensive hyperparameter
 
 - **Machine Learning:** PyTorch, Stable Baselines3
 - **Environment & Visualization:** Pygame, NumPy
-- **Deployment (MLOps):** FastAPI, Celery, Redis, Uvicorn
+- **Deployment (MLOps):** FastAPI, Uvicorn
 
 ## 💻 Installation & Usage
 
 ### 1. Install Dependencies
 Create a `requirements.txt` file with the following content:
 ```text
-stable-baselines3>=2.0.0
-torch>=2.0.0
-gymnasium>=0.28.1
-pygame>=2.5.0
-numpy>=1.24.0
-fastapi>=0.100.0
-uvicorn>=0.23.0
-celery>=5.3.0
-redis>=4.6.0
-pydantic>=2.0.0
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+cffi==2.1.1
+click==8.5.0
+cloudpickle==3.1.2
+Farama-Notifications==0.0.6
+fastapi==0.142.1
+filelock==4.0.7
+fsspec==2026.9.0
+gymnasium==1.3.0
+h11==0.16.0
+idna==3.20
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+mpmath==1.3.0
+networkx==3.7
+numpy==2.5.3
+opentelemetry-api==1.45.0
+pycparser==3.0
+pydantic==2.13.5
+pydantic_core==2.46.5
+pygame==2.6.1
+pymunk==7.3.0
+setuptools==84.0.0
+stable_baselines3==2.9.0
+starlette==1.7.0
+sympy==1.14.0
+torch==2.14.0
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+uvicorn==0.54.0
+pandas>=2.2.0
+matplotlib>=3.8.0
 
 ```
 
@@ -119,18 +143,17 @@ Access the Swagger UI at `[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/doc
 
 ```text
 car_parking_rl/
-├── api/
-│   ├── main.py            # FastAPI application & endpoints
-│   ├── schemas.py         # Pydantic models for request/response validation
-├── env/
-│   ├── parking_env.py     # Gymnasium-compatible RL environment
-│   ├── physics.py         # Car kinematics and collision logic
-│   └── renderer.py        # Pygame visualizer
+├── checkpoints/           # Model training checkpoints
+├── checkpoints_finetune/  # Checkpoints from fine-tuning phases
+├── models/                # Additional saved models
 ├── src/
-│   ├── agent/             
-│   │   ├── train.py       # PPO training loop with Curriculum Learning
-│   │   ├── evaluate.py    # Model evaluation scripts
-│   │   └── plot_results.py# Matplotlib curriculum progress charts
-├── SavedModels/           # Serialized .zip models for different iterations
-├── videos/                # Gifs and visualizations of the agent
+│   ├── agent/             # PPO training, fine-tuning, and evaluation scripts
+│   ├── api/               # FastAPI application, schemas, and endpoints
+│   ├── env/               # Gymnasium-compatible RL environment, physics, and renderer
+│   ├── SavedModels/       # Serialized .zip models for different iterations
+│   ├── videos/            # Gifs and visualizations of the learning process
+│   └── play_vs_ai.py      # Script to manually test your skills against the trained AI
+├── ppo_parking_agent.zip  # Final exported model
+├── requirements.txt       # Project dependencies
+├── training_logs.csv      # Raw logs from the training process
 └── README.md
