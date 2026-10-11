@@ -1,4 +1,3 @@
-```markdown
 # Autonomous Parking Agent (Reinforcement Learning) 🚗🧠
 
 An end-to-end Deep Reinforcement Learning project that trains an autonomous agent to park a car in complex environments. The project features a custom physics environment, curriculum learning, a heavily optimized PPO architecture, and a production-ready API for inference.
@@ -16,24 +15,24 @@ Watch how the agent's behavior evolves over tens of millions of training steps a
 
 ### Early Stages (Learning the Basics)
 - **4 Million Steps (Difficulty Level 0):**
-  ![4M Steps - Level 0](videos/4mil_level0_0.gif)
+  ![4M Steps - Level 0](src/videos/4mil_level0_0.gif)
   *Agent learns basic acceleration and steering to reach an open spot.*
 
 - **5.5 Million Steps (Difficulty Level 4):**
-  ![5.5M Steps - Level 4](videos/5_5mil_level4_0.gif)
+  ![5.5M Steps - Level 4](src/videos/5_5mil_level4_0.gif)
   *Introduction of obstacles. The agent starts learning obstacle avoidance.*
 
 ### Mid-Training (Complex Maneuvers)
 - **10 Million Steps (Difficulty Level 6):**
-  ![10M Steps - Level 6](videos/10mil_level6_0.gif)
+  ![10M Steps - Level 6](src/videos/10mil_level6_0.gif)
   *Handling tighter spaces and more complex parking angles.*
 
 ### Final Fully-Trained Agent (47 Million Steps)
 The final model demonstrates a highly robust parking strategy across all difficulties, achieving a >95% success rate.
 <p align="center">
-  <img src="videos/47mil_level0_0.gif" alt="47M Steps - Level 0" width="30%">
-  <img src="videos/47mil_level6_0.gif" alt="47M Steps - Level 6" width="30%">
-  <img src="videos/47mil_level10_0.gif" alt="47M Steps - Level 10" width="30%">
+  <img src="src/videos/47mil_level0_0.gif" alt="47M Steps - Level 0" width="30%">
+  <img src="src/videos/47mil_level6_0.gif" alt="47M Steps - Level 6" width="30%">
+  <img src="src/videos/47mil_level10_0.gif" alt="47M Steps - Level 10" width="30%">
 </p>
 <p align="center">
   <em>From left to right: Difficulty Level 0, Level 6, and maximum Level 10.</em>
@@ -47,7 +46,15 @@ Training autonomous agents with sparse rewards required extensive hyperparameter
 2. **Attempt 2 (Information Funnel + Smart Critic):** We implemented a hierarchical architecture. The Actor was narrowed down (`[256, 256, 128, 128]`) to filter out noise and force decisive steering actions, while the Critic was given higher capacity (`[512, 256, 128, 128]`) to better estimate state values before rewards were given.
 3. **Exploration Tuning:** By increasing the entropy coefficient (`ent_coef=0.005`) and implementing a linear learning rate schedule, the agent successfully overcame local optima, reaching a **95%+ success rate** on the maximum difficulty level.
 
-*(Insert your curriculum progress charts here if available, e.g., `![Training Progress](videos/image_b8f73b.png)`)*
+### Learning Curves (Final Model)
+<p align="center">
+  <img src="src/agent/eval_charts modelv1/average_reward.png" alt="Average Reward" width="32%">
+  <img src="src/agent/eval_charts modelv1/average_steps.png" alt="Average Steps" width="32%">
+  <img src="src/agent/eval_charts modelv1/curriculum_progress.png" alt="Curriculum Progress" width="32%">
+</p>
+<p align="center">
+  <em>From left to right: Average Epoch Reward, Average Episode Length (Steps), and Curriculum Level Progression over training timesteps.</em>
+</p>
 
 ## 🛠️ Tech Stack
 
