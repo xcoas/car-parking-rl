@@ -42,9 +42,9 @@ The final model demonstrates a highly robust parking strategy across all difficu
 
 Training autonomous agents with sparse rewards required extensive hyperparameter tuning and architecture changes:
 
-1. **Attempt 1 (Wide Network - `[512, 512]`):** The agent suffered from severe vanishing gradients and failed to associate sparse rewards with complex maneuvers. Training stalled at 0.0 difficulty for over 30M timesteps.
-2. **Attempt 2 (Information Funnel + Smart Critic):** We implemented a hierarchical architecture. The Actor was narrowed down (`[256, 256, 128, 128]`) to filter out noise and force decisive steering actions, while the Critic was given higher capacity (`[512, 256, 128, 128]`) to better estimate state values before rewards were given.
-3. **Exploration Tuning:** By increasing the entropy coefficient (`ent_coef=0.005`) and implementing a linear learning rate schedule, the agent successfully overcame local optima, reaching a **95%+ success rate** on the maximum difficulty level.
+1. **Attempt 1 (Initial Architecture - `[256, 256, 128]`):** We started our training experiments using a standard baseline network. However, the agent struggled to associate sparse rewards with complex maneuvers, and training stalled at early difficulty levels.
+2. **Attempt 2 (Architecture Search & Asymmetric Networks):** We subsequently tested various other network shapes before settling on a hierarchical asymmetric architecture. The Actor was set to `[256, 256, 128, 128]` to force decisive steering actions, while the Critic was given higher capacity (`[512, 256, 128, 128]`) to better estimate state values.
+3. **Exploration Tuning:** We did not rely on any learning rate scheduling. Instead, we successfully overcame local optima by focusing purely on exploration – specifically by increasing the entropy coefficient (`ent_coef=0.005`). This approach allowed the agent to reliably escape dead ends, reaching a **95%+ success rate** on the maximum difficulty level.
 
 ### Learning Curves (Final Model)
 <p align="center">
