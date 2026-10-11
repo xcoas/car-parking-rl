@@ -12,6 +12,7 @@ from stable_baselines3.common.env_checker import check_env
 from env.parking_env import ParkingEnv
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback, CallbackList
+from plot_results import plot_all_charts
 
 class DifficultyCallback(BaseCallback):
     def __init__(self, verbose = 1, current_difficulty: float = 0.0):
@@ -89,6 +90,7 @@ class DifficultyCallback(BaseCallback):
             ])
 
         self.model.save("ppo_parking_agent")
+        plot_all_charts()
         
 
 if __name__ == "__main__":
@@ -108,14 +110,14 @@ if __name__ == "__main__":
 
     policy_kwargs = dict(
         net_arch=dict(
-            pi=[512, 512],
-            vf=[512, 512]
+            pi=[256, 256, 128, 128],
+            vf=[512, 256, 128, 128]
         )
     )
     model = PPO(
         "MlpPolicy", 
         env, 
-        ent_coef=0.00005,
+        ent_coef=0.005,
         verbose=1, 
         policy_kwargs=policy_kwargs,
         n_steps=16000,
